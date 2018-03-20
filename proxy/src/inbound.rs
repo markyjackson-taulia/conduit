@@ -95,6 +95,7 @@ mod tests {
     use conduit_proxy_controller_grpc::common::Protocol;
     use bind::{self, Bind, Host};
     use ctx;
+    use telemetry::sensor::http as sensor;
 
     fn new_inbound(default: Option<net::SocketAddr>, ctx: &Arc<ctx::Proxy>) -> Inbound<()> {
         let core = Core::new().unwrap();

@@ -27,8 +27,9 @@ use super::tcp;
 /// service.
 pub struct Server<S: NewService, B: tower_h2::Body, G>
 where
-    S: NewService<Request=http::Request<HttpBody>>,
+    S: NewService<Request=http:: Request<HttpBody>>,
     S::Future: 'static,
+    HttpBodyNewSvc<S>: NewService,
 {
     executor: Handle,
     get_orig_dst: G,
@@ -49,6 +50,7 @@ where
     > + Clone + 'static,
     S::Future: 'static,
     S::Error: fmt::Debug,
+    HttpBodyNewSvc<S>: NewService,
     B: tower_h2::Body + 'static,
     G: GetOriginalDst,
 {

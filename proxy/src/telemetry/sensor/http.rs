@@ -99,7 +99,7 @@ where
     A: Body + 'static,
     B: Body + 'static,
     N: NewService<
-        Request = http::Request<A>,
+        Request = http::Request<RequestBody<A>>,
         Response = http::Response<B>,
         Error = client::Error,
     >
@@ -126,13 +126,13 @@ where
     A: Body + 'static,
     B: Body + 'static,
     N: NewService<
-        Request = http::Request<A>,
+        Request = http::Request<RequestBody<A>>,
         Response = http::Response<B>,
         Error = client::Error,
     >
         + 'static,
 {
-    type Request = N::Request;
+    type Request = http::Request<A>;
     type Response = http::Response<ResponseBody<B>>;
     type Error = N::Error;
     type InitError = N::InitError;
@@ -157,7 +157,10 @@ where
     A: Body + 'static,
     B: Body + 'static,
     F: Future,
-    F::Item: Service<Request = http::Request<A>, Response = http::Response<B>>,
+    F::Item: Service<
+        Request = http::Request<RequestBody<A>>,
+        Response = http::Response<B>
+    >,
 {
     type Item = Http<F::Item, A, B>;
     type Error = F::Error;
@@ -224,11 +227,10 @@ where
                 (respond_inner, body_inner)
             }
         };
-
-        req.body = MeasuredBody {
-            body: req.body,
-            inner: body_inner,
-            ..Default::default()
+        let req = {
+            let (parts, body) = req.into_parts();
+            let body = MeasuredBody::new(body, body_inner);
+            http::Request::from_parts(parts, body)
         };
 
         let future = self.service.call(req);
@@ -308,11 +310,7 @@ where
 
                 let rsp = {
                     let (parts, body) = rsp.into_parts();
-                    let body = ResponseBody {
-                        body,
-                        inner,
-                        _p: PhantomData,
-                    };
+                    let body = ResponseBody::new(body, inner);
                     http::Response::from_parts(parts, body)
                 };
 
@@ -349,6 +347,14 @@ where
 // === MeasuredBody ===
 
 impl<B, I: BodySensor> MeasuredBody<B, I> {
+    pub fn new(body: B, inner: Option<I>) -> Self {
+        Self {
+            body,
+            inner,
+            _p: PhantomData,
+        }
+    }
+
     /// Wraps an operation on the underlying transport with error telemetry.
     ///
     /// If the transport operation results in a non-recoverable error, a transport close

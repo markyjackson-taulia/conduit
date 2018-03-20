@@ -113,7 +113,7 @@ where
     C::Future: 'static,
     B: tower_h2::Body + 'static,
 {
-    type Request = http::Request<B>;
+    type Request = bind::HttpRequest<B>;
     type Response = http::Response<HttpBody>;
     type Error = tower_h2::client::Error;
     type InitError = tower_h2::client::ConnectError<C::Error>;
@@ -164,7 +164,7 @@ where
     C::Future: 'static,
     B: tower_h2::Body + 'static,
 {
-    type Request = http::Request<B>;
+    type Request = bind::HttpRequest<B>;
     type Response = http::Response<HttpBody>;
     type Error = tower_h2::client::Error;
     type Future = ClientServiceFuture;
